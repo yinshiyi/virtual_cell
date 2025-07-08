@@ -23,31 +23,52 @@ def random_predictor(
                          index=np.arange(total_cells).astype(str)),
         var=pd.DataFrame(index=gene_names)
     )
-
+def slim_anndata(adata: ad.AnnData) -> ad.AnnData:
+    return ad.AnnData(
+        X=adata.X,
+        obs=adata.obs[["target_gene"]],
+        var=pd.DataFrame(index=adata.var_names),
+    )
 def main(args):
     # Load expected perturbation counts
     pert_counts = pl.read_csv(args.pert_counts).to_pandas()
     gene_names = pl.read_csv(args.gene_names, has_header=False).to_numpy().flatten()
-
     # Generate predictions
     adata = random_predictor(
         pert_names=pert_counts["target_gene"].to_numpy(),
         cell_counts=pert_counts["n_cells"].to_numpy(),
         gene_names=gene_names,
     )
-
+    print("Random predictions generated.")
     # Optionally add non-targeting controls
     if args.training_adata:
-        tr_adata = ad.read_h5ad(args.training_adata)
-        ntc_adata = tr_adata[tr_adata.obs["target_gene"] == "non-targeting"]
+        tr_adata_path = args.training_adata
+        tr_adata = ad.read_h5ad(tr_adata_path, backed="r")
+        obs_df = tr_adata.obs
+        ntc_idx = obs_df.index[obs_df["target_gene"] == "non-targeting"]
+        # write.csv(
+        #     obs_df.loc[ntc_idx, ["target_gene", "n_cells"]],
+        #     path="non_targeting_counts.csv",
+        #     header=True,
+        # )
+        # print("Non-targeting control counts saved to non_targeting_counts.csv")
+        ntc_adata = ad.read_h5ad(tr_adata_path)[ntc_idx, :]
+        tr_adata.file.close()
+        del tr_adata
+        ntc_slim = slim_anndata(ntc_adata)
+        del ntc_adata
+        print("Loaded non-targeting control AnnData.")
         if "non-targeting" not in adata.obs["target_gene"].unique():
-            assert np.all(adata.var_names.values == ntc_adata.var_names.values), (
+            assert np.all(adata.var_names.values == ntc_slim.var_names.values), (
                 "Gene names are out of order or unequal"
             )
-            adata = ad.concat([adata, ntc_adata])
+            adata = ad.concat([adata, ntc_slim])
 
     # Save output
     adata.write_h5ad(args.output_h5ad)
+    # adata.write_h5ad("predicted_only.h5ad")
+    # ntc_adata.write_h5ad("ntc_only.h5ad")
+
     print(f"Saved prediction AnnData to: {args.output_h5ad}")
     print("Run the following command to prepare for scoring:")
     print(f"cell-eval prep -i {args.output_h5ad} --genes {args.gene_names}")
