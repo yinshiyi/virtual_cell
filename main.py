@@ -62,6 +62,7 @@ def main(args):
             assert np.all(adata.var_names.values == ntc_slim.var_names.values), (
                 "Gene names are out of order or unequal"
             )
+            ntc_slim.X.data = np.log1p(ntc_slim.X.data)  # apply log1p to .data since it is sparse
             adata = ad.concat([adata, ntc_slim])
 
     # Save output
