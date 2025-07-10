@@ -2,10 +2,12 @@
 # pyenv activate vcc-env
 # pip install -r requirements.txt
 
-data=/Users/yins/Desktop/vcc_data/
+data1=/Users/yins/Desktop/vcc_data/
+data=vcc_data/
+output=20250710
 python main.py \
   --pert_counts $data/pert_counts_Validation.csv \
   --gene_names $data/gene_names.csv \
   --training_adata $data/adata_Training.h5ad \
-  --output_h5ad $data/example2.h5ad
-cell-eval prep -i $data/example.h5ad --genes $data/gene_names.csv
+  --output_h5ad $data/$output.h5ad
+cell-eval prep -i $data/$output.h5ad --genes $data/gene_names.csv
