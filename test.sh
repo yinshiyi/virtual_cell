@@ -5,7 +5,7 @@
 data1=/Users/yins/Desktop/vcc_data/
 data=vcc_data/
 output=20250710
-python main.py \
+python main_og.py \
   --pert_counts $data/pert_counts_Validation.csv \
   --gene_names $data/gene_names.csv \
   --training_adata $data/adata_Training.h5ad \
