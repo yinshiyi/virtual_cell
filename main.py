@@ -14,9 +14,7 @@ def random_predictor(
 ) -> ad.AnnData:
     """Generate a random AnnData with the expected number of cells per perturbation."""
     total_cells = cell_counts.sum()
-    matrix = np.random.randint(0, int(max_count), size=(total_cells, gene_names.size))
-    if log1p:
-        matrix = np.log1p(matrix)
+    matrix = np.zeros((total_cells, gene_names.size))
     return ad.AnnData(
         X=matrix,
         obs=pd.DataFrame({"target_gene": np.repeat(pert_names, cell_counts)},
@@ -52,22 +50,23 @@ def main(args):
         #     header=True,
         # )
         # print("Non-targeting control counts saved to non_targeting_counts.csv")
-        ntc_adata = ad.read_h5ad(tr_adata_path)[ntc_idx, :]
-        tr_adata.file.close()
-        del tr_adata
-        ntc_slim = slim_anndata(ntc_adata)
-        del ntc_adata
-        print("Loaded non-targeting control AnnData.")
-        if "non-targeting" not in adata.obs["target_gene"].unique():
-            assert np.all(adata.var_names.values == ntc_slim.var_names.values), (
-                "Gene names are out of order or unequal"
-            )
-            ntc_slim.X.data = np.log1p(ntc_slim.X.data)  # apply log1p to .data since it is sparse
-            adata = ad.concat([adata, ntc_slim])
+        ### comment out if run local
+        # ntc_adata = ad.read_h5ad(tr_adata_path)[ntc_idx, :]
+        # tr_adata.file.close()
+        # del tr_adata
+        # ntc_slim = slim_anndata(ntc_adata)
+        # del ntc_adata
+        # print("Loaded non-targeting control AnnData.")
+        # if "non-targeting" not in adata.obs["target_gene"].unique():
+        #     assert np.all(adata.var_names.values == ntc_slim.var_names.values), (
+        #         "Gene names are out of order or unequal"
+        #     )
+        #     ntc_slim.X.data = np.log1p(ntc_slim.X.data)  # apply log1p to .data since it is sparse
+        #     adata = ad.concat([adata, ntc_slim])
 
     # Save output
-    adata.write_h5ad(args.output_h5ad)
-    # adata.write_h5ad("predicted_only.h5ad")
+    # adata.write_h5ad(args.output_h5ad)
+    adata.write_h5ad("predicted_only_10.h5ad")
     # ntc_adata.write_h5ad("ntc_only.h5ad")
 
     print(f"Saved prediction AnnData to: {args.output_h5ad}")
